@@ -1,0 +1,10 @@
+**** This is a another template ****
+
+{{ .Name }} weights {{ .Number }} pounds on {{ .Structure.CreatedAt }} ({{ .Structure.CreatedAt | Ago }} ago).
+
+{{- /* Using variable and calling a method */ -}}
+In seconds {{ $dt := .Structure.CreatedAt | Ago }}{{ $dt.Seconds }} s.
+
+{{/* does not work .Structure.size */}}
+
+This is the end of the sub-template

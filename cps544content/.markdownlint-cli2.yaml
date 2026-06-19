@@ -1,0 +1,31 @@
+config:
+  # Default state for all rules
+  default: true
+
+  # Line length check
+  MD013: false
+
+  # Inline HTML
+  MD033: false
+
+  # Multiple consecutive blank lines
+  MD012: true
+
+  # First line in the file should be a top-level heading
+  MD041: false
+
+  # Horizontal rules style
+  MD035: false
+
+  # Allow tabs in code blocks (for Go)
+  MD010:
+    code_blocks: false
+
+globs:
+  - "**/*.{md,markdown}"
+
+ignores:
+  - "CHANGELOG.md"
+  - ".gitlab/issue_templates/**"
+  - "docs/cli/**"
+  - "docs/apis/**"

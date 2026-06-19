@@ -1,0 +1,27 @@
+{
+    "theme": "sky",
+    "highlightTheme": "vs",
+    "css": "slides/css/style.css",
+    "controls": true,
+    "controlsLayout": "bottom-right",
+    "controlsBackArrows": "visible",
+    "progress": true,
+    "slideNumber": "c/t",
+    "overview": true,
+    "keyboard": true,
+    "touch": false,
+    "navigationMode": "default",
+    "mouseWheel": true,
+    "transition": "slide",
+    "backgroundTransition": "fade",
+    "printMode": "pdf",
+    "print": {
+        "format": "Letter",
+        "landscape": true,
+        "border": "0.5cm",
+        "margin": 0.15
+    },
+    "pdfMaxPagesPerSlide": 1,
+    "pdfSeparateFragments": false,
+    "showNotes": false
+}

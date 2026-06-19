@@ -1,0 +1,40 @@
+name: Testing Workflow
+
+on: [push]
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  answers:
+    name: Check Answers
+    runs-on: self-hosted
+    outputs:
+      points: ${{ steps.getpoints.outputs.points }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: check answers
+        run: ./grade.sh
+      - name: collect points
+        id: getpoints
+        # for annotations syntax see https://docs.github.com/en/actions/using-workflows/workflow-commands-for-github-actions#setting-a-warning-message
+        # for multiline annotations see https://github.com/actions/toolkit/issues/193#issuecomment-605394935
+        run: |-
+          points=$(tail -n1 grade.txt)
+          echo "points=$points" >> $GITHUB_OUTPUT
+          echo ::notice file=README.md::$points
+      - name: fail if not all points earned
+        run: "grep 'Points: 10' grade.txt"
+  
+  work:
+    name: Check Work.md
+    runs-on: self-hosted
+    steps:
+      - uses: actions/checkout@v3
+      - name: check for Work.md
+        run: test -s Work.md
+      - uses: DavidAnson/markdownlint-cli2-action@v12
+        with:
+          globs: "Work.md"

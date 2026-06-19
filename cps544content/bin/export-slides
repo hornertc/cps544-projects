@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+
+set -e
+
+# Check if source and destination directories are provided
+if [ "$#" -ne 2 ]; then
+    echo "Usage: $0 <source_dir> <destination_dir>"
+    echo "Example: $0 ./slides ./pdfs"
+    exit 1
+fi
+
+SOURCE_DIR="$1"
+DEST_DIR="$2"
+
+# Create destination directory if it doesn't exist
+mkdir -p "$DEST_DIR"
+
+# Find all .md files in source directory and its subdirectories
+find "$SOURCE_DIR" -name "*.md" -type f | while read -r file; do
+    # Get the relative path of the file
+    rel_path=${file#"$SOURCE_DIR/"}
+    # Create the destination directory structure
+    mkdir -p "$DEST_DIR/$(dirname "$rel_path")"
+    # Create PDF filename
+    pdf_file="$DEST_DIR/${rel_path%.md}.pdf"
+    
+    echo "Converting: $file -> $pdf_file"
+    
+    # Convert markdown to PDF using reveal-md
+    reveal-md "$file" --print "$pdf_file" --config reveal-md.json
+done
+
+echo "Conversion complete! PDFs are in: $DEST_DIR"

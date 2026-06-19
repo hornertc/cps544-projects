@@ -1,0 +1,44 @@
+:root {
+    --r-heading-text-transform: none;
+    --r-heading1-size: 3em;
+    --r-heading2-size: 1.9em;
+}
+
+.reveal code {
+    color: #0969da;
+}
+
+.warning {
+    color: red;
+}
+
+/* Enhanced controls styling */
+.reveal .controls {
+    color: #0969da;
+}
+
+.reveal .progress {
+    color: #0969da;
+}
+
+.reveal .slide-number {
+    background-color: transparent;
+    color: #0969da;
+}
+
+/* Print-specific styles */
+@media print {
+    .reveal .slides section {
+        height: 100% !important;
+        min-height: 100% !important;
+    }
+
+    .reveal code {
+        color: #0969da !important;
+        background-color: rgba(9, 105, 218, 0.1) !important;
+    }
+
+    .warning {
+        color: red !important;
+    }
+}

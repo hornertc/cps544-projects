@@ -1,0 +1,41 @@
+name: Testing Workflow
+
+on: [push]
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  test:
+    name: test
+    runs-on: ud-vdi-arc
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Go environment
+      uses: actions/setup-go@v4
+      with:
+        go-version: stable
+        cache: false
+    - name: Build executable
+      run: go build -v -o opgame ./cmd/opgame
+    - name: Run Unit Tests
+      run: go test -v -timeout 2s ./...
+    - name: Test CLI
+      timeout-minutes: 1
+      run: ./test.sh
+  
+  lint:
+    name: Lint
+    runs-on: ud-vdi-arc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+          cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest

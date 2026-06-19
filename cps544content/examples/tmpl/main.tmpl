@@ -1,0 +1,22 @@
+This is the main template
+
+Missing: {{ .NotHere }}
+
+{{ .Name }} has {{ .Number }} pets.
+
+{{ template "sub.tmpl" . }}
+
+{{ .Name }} has {{ template "Hex" .Number }} pets.
+
+{{ define "Hex" -}}
+{{ printf "%d (0x%[1]x)" . }}
+{{- end -}}
+
+
+{{ range index . "Prime Numbers" -}}
+value: {{ . }}
+{{ end }}
+
+{{ range $i, $x := index . "Prime Numbers" -}}
+{{ $i }}: value is {{ $x }}
+{{ end }}

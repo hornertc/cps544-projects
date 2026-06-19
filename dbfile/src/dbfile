@@ -1,0 +1,369 @@
+#!/bin/sh
+
+# set the database directory
+# use variable DBFILE_DATABASE if provided, or 'db' if not
+DB_DIR=${DBFILE_DATABASE:-"db"}
+
+# create the database directory if it does not exist
+if [ ! -d "$DB_DIR" ]; then
+  mkdir -p "$DB_DIR"
+fi
+
+# function to check if a table already exists
+# passes one argument: table name
+table_exists() {
+  # if the file/table exists return 0 
+  # if the file/table does not exist return 1
+  if [ -f "$DB_DIR/$1.csv" ]; then
+    return 0
+  else
+    return 1
+  fi
+} # end table_exists
+
+# function to create a new table
+# passes two aruements: table name, field names (separated by commas)
+table_create() {
+  table_name=$1
+  field_names=$2
+  
+  # if the tables exists
+  # output error message and exit with status code 1
+  if table_exists "$table_name"; then
+    echo "Table \"$table_name\" already exists."
+    echo "Use 'dbfile $table_name [add|lookup|delete|update]' to modify it."
+    exit 1
+  # if the table does not exists
+  # create table
+  # output success message
+  # exit with status code 0
+  else
+    echo "$field_names" > "$DB_DIR/$table_name.csv"
+    echo "Table \"$table_name\" created with fields: $field_names"
+    exit 0
+  fi
+} # end table_create
+
+# function to list all tables in the database in aplhabetical order
+table_list() {
+  # find .csv files within the directory
+  # remove .csv from filenames
+  # retrieve only the filename from the full path
+  # sort the filenames aplhabetically
+  find "$DB_DIR" -type f -name "*.csv" | sed 's/\.csv$//' | xargs -n1 basename | sort
+} # end table_list
+
+# function to add a record to a table
+# passes two arguments: table name, record data to add to the table
+table_add() {
+  table_name=$1
+  record_data=$2
+  
+  # if the table exists
+  # append the record data to the table
+  # output success message
+  # exit with status code 0
+  if table_exists "$table_name"; then
+    echo "$record_data" >> "$DB_DIR/$table_name.csv"
+    echo "Record added to \"$table_name\": $record_data"
+    exit 0
+  # if the table does not exist
+  # output error message
+  # exit with status code 1
+  else
+    echo "Table \"$table_name\" does not exist."
+    echo "Use 'dbfile create $table_name \"field1,field2,...\"' to create it."
+    exit 1
+  fi
+} # end table_add
+
+# function to lookup records in a table
+# passes two arguments: table name, query (record to find based on format field=value)
+table_lookup() {
+  table_name=$1
+  query=$2
+
+  # if the table exists, split query into field and value cutting at the '=' symbol
+  if table_exists "$table_name"; then
+    field_name=$(echo "$query" | cut -d '=' -f 1)
+    value_to_find=$(echo "$query" | cut -d '=' -f 2)
+
+    # use awk to process table data
+    # assign col (field_name) and val (value_to_find) variables
+    if awk -v col="$field_name" -v val="$value_to_find" '
+    
+    # begin processing the table data
+      BEGIN {
+        FS = ","    # set field separator as ',' 
+        found = 0   # set found variable to 0
+      }
+      {
+        # if the current line number is 1 (field name row)
+        if (NR == 1) {
+          # loop through each field name to find the record that matches the searched field name (col)
+          for (i = 1; i <= NF; i++) {
+            # if found, assign col_num to the field number
+            if ($i == col) {
+              col_num = i 
+            }
+          }
+        }
+        # if a record in the found field name matches the searched value
+        # assign found to 1 and print the record
+        if ($col_num == val) {
+          found = 1
+          print
+        }
+      }
+      # end processing the table data
+      END {
+        # if no record was found
+        # exit with status code 1
+        if (found == 0) {
+          exit 1
+        }
+      }
+      # the table to be processed
+    ' "$DB_DIR/$table_name.csv"
+
+    # if the awk script exits without error (record was found)
+    # exit with status code 0
+    then
+      exit 0
+    # if the awk script exits with an error (no record was found)
+    # output error message
+    # exit with status code 1
+    else
+      echo "No matching record(s) found for query: $query"
+      echo "Use 'dbfile lookup $table_name [field name]=[value]' to lookup."
+      exit 1 
+    fi
+  # if the table does not exist
+  # output error message
+  # exit with status code 1
+  else
+    echo "Table \"$table_name\" does not exist."
+    echo "Use 'dbfile create $table_name \"field1,field2,...\"' to create it."
+    exit 1
+  fi
+} # end table_lookup
+
+# function to delete records in a table
+# passes two arguments: table name, query (record to delete based on format field=value)
+table_delete() {
+  table_name=$1
+  query=$2
+
+  # if the table exists, create a tempory file to store modified data
+  if table_exists "$table_name"; then
+    tmp_file="$DB_DIR/$table_name.tmp"
+
+    # split query into field and value cutting at the '=' symbol
+    field_name=$(echo "$query" | cut -d= -f1)
+    value_to_find=$(echo "$query" | cut -d= -f2)
+
+    # use awk to process table data
+    # assign col (field_name) and val (value_to_find) variables
+    if awk -v col="$field_name" -v val="$value_to_find" '
+
+    # begin processing the table data
+      BEGIN {
+        FS = ","    # set field separapt as ','
+        OFS = ","   # set output field separator as ','
+        found = 0   # set found to 0
+      }
+      {
+        # if the current line number is 1 (field name row)
+        if (NR == 1) {
+          # loop through each field name to find the record that matches the searched field name (col)
+          for (i = 1; i <= NF; i++) {
+            # if found, assign col_num to the field number
+            if ($i == col) {
+              col_num = i
+            }
+          }
+        }
+        # if a record in the found field name does not match the searched value
+        # print the record to the temp file
+        # if there is a match, assign found to 1
+        if ($col_num != val) {
+          print
+        } else {
+          found = 1
+        }
+      }
+      # end processing the table data
+      END {
+        # if no record was found
+        # exit with status code 1
+        if (found == 0) {
+          exit 1
+        }
+      }
+      # the table to be processed and temp file to write to
+    ' "$DB_DIR/$table_name.csv" > "$tmp_file"
+
+    # if the awk scripts exits without error (found a match)
+    # replace the table file with the temp file
+    then
+      if mv "$tmp_file" "$DB_DIR/$table_name.csv"
+      # if the file move is successfl
+      # output success message 
+      # exit with status code 0
+      then
+        echo "Record deleted in $table_name: $query"
+        exit 0
+      # if the file move is unsuccessful
+      # output error message
+      # remove temp file
+      # exit with status code 1
+      else
+        echo "Error replacing the original file."
+        rm "$tmp_file" 
+        exit 1
+      fi
+    # if the awk script exits with an error (did not find a match)
+    # output error message 
+    # remove temp file
+    # exit with status code 1
+    else
+      echo "No matching record found for query: $query"
+      echo "Use 'dbfile delete $table_name [field name]=[value]' to delete."
+      rm "$tmp_file"
+      exit 1
+    fi
+  # if table does not exist
+  # output error message
+  # exit with status code 1
+  else
+    echo "Table \"$table_name\" does not exist."
+    echo "Use 'dbfile create $table_name \"field1,field2,...\"' to create it."
+    exit 1
+  fi
+} # end table_delete
+
+# function to update records in a table
+# passes three arguments: table name, query (record to update based on format field=value), new record data
+table_update() {
+  table_name=$1
+  query=$2
+  new_record_data=$3
+  
+  # if the table exists, create a tempory file to store modified data
+  if table_exists "$table_name"; then
+    tmp_file="$DB_DIR/$table_name.tmp"
+
+    # split query into field and value cutting at the '=' symbol
+    field_name=$(echo "$query" | cut -d= -f1)
+    value_to_find=$(echo "$query" | cut -d= -f2)
+
+    # use awk to process table data
+    # assign output field separator as ','
+    # assign col (field_name), val (value_to_find) and new_data (new_record_data) variables
+    if awk -v OFS=',' -v col="$field_name" -v val="$value_to_find" -v new_data="$new_record_data" '
+
+      # begin processing the table data
+      # set field separator as output field separator
+      BEGIN { 
+        FS = OFS 
+      }
+      {
+        # if the current line number is 1 (field name row)
+        if (NR == 1) { 
+          # loop through each field name to find the record that matches the searched field name (col)
+          for (i = 1; i <= NF; i++) {
+            # if found, assign col_num to the field number
+            if ($i == col) {
+              col_num = i
+            }
+          }
+        }
+        # if a record in the found field name matches the searched value
+        # update the record with new data and set found to 1
+        if ($col_num == val) { 
+          $0 = new_data 
+          found = 1 }
+        
+        # print the current/updated record to the temp file
+        { 
+          print 
+        }
+      }
+      # end processing the table data
+      END { 
+        # if no record was found
+        # exit with status code 1
+        if (found == 0) 
+          exit 1
+        }
+      
+    # the table to be processed and temp file to write to
+    ' "$DB_DIR/$table_name.csv" > "$tmp_file"
+
+    # if the awk scripts exits without error (found a match)
+    # replace the table file with the temp file
+    then
+      if mv "$tmp_file" "$DB_DIR/$table_name.csv"
+      # if the file move is successfl
+      # output success message
+      # exit with status code 0
+      then
+        echo "Record updated in \"$table_name\": $new_record_data"
+        exit 0
+      # if the file move is unsuccessful
+      # output error message
+      # remove temp file
+      # exit with status code 1
+      else
+        echo "Error replacing the original file."
+        rm "$tmp_file"
+        exit 1
+      fi
+    # if the awk script exits with an error (did not find a match) 
+    # output error message and
+    # remove temp file
+    # exit with status code 1
+    else
+      echo "No matching record found for query: $query"
+      echo "Use 'dbfile update $table_name [field name]=[value]' to update."
+      rm "$tmp_file"
+      exit 1
+    fi
+  # if table does not exist
+  # output error message
+  # exit with status code 1
+  else
+    echo "Table \"$table_name\" does not exist."
+    echo "Use 'dbfile create $table_name \"field1,field2,...\"' to create it."
+    exit 1
+  fi
+} # end table_update
+
+# case statement based on the first argument of user input (src/dbfile $1...)
+case "$1" in
+  # if the first argument is 'create'
+  # call 'table_create' function with arguments 2 and 3
+  "create") table_create "$2" "$3";;
+  # if the first argument is 'list'
+  # call the 'table_list' function
+  "list") table_list;;
+  # if the first argument is 'add'
+  # call the 'table_list' function with arguments 2 and 3
+  "add") table_add "$2" "$3";;
+  # if the first argument is 'lookup'
+  # call the 'table_lookup' function with arguments 2 and 3
+  "lookup") table_lookup "$2" "$3";;
+  # if the first argument is 'delete'
+  # call the 'table_delete' function with arguments 2 and 3
+  "delete") table_delete "$2" "$3";;
+  # if the first argument is 'update'
+  # call the 'table_update' function with arguments 2, 3 and 4
+  "update") table_update "$2" "$3" "$4";;
+  # if the first argument did not match any commands
+  *)
+    # output directions with valid commands 
+    # exit with status code 1
+    echo "\"$1\" is not a valid command"
+    echo "Use: $0 [create|list|add|lookup|delete|update]"
+    exit 1
+esac # exit case statement

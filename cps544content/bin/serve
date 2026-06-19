@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+set -e
+
+bindir=$(dirname "$0")
+
+cd "$bindir/.."
+reveal-md slides/ -w --disable-auto-open

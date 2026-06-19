@@ -1,0 +1,18 @@
+{
+    "width": 1500,
+    "height": 1000,
+    "controls": true,
+    "controlsLayout": "bottom-right",
+    "controlsBackArrows": "visible",
+    "progress": true,
+    "slideNumber": "c/t",
+    "keyboard": true,
+    "overview": true,
+    "touch": false,
+    "navigationMode": "default",
+    "highlight": {
+        "escapeHtml": false,
+        "lineNumbers": true,
+        "highlightLines": true
+    }
+}

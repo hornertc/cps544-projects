@@ -1,0 +1,8 @@
+#!/usr/bin/env gos
+# ensure that gos is added to your PATH
+# export PATH="$(pwd):$PATH"
+echo hello world
+curl https://example.com >example.html
+echo again >>example.html
+
+HOME=/tmp env

@@ -1,0 +1,46 @@
+name: Testing Workflow
+
+on: [push]
+
+permissions:
+  checks: write
+  actions: read
+  contents: read
+
+jobs:
+  test:
+    name: Unit Test
+    runs-on: ud-vdi-arc
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup Go environment
+      uses: actions/setup-go@v4
+      with:
+        go-version: stable
+        # cache: false
+    - name: Add dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get -yq install gcc
+    - name: Run tests
+      run: |-
+        set -euo pipefail
+        CGO_ENABLED=1 go test -v -timeout 2s -race ./... | tee test.out
+    - name: Grade
+      if: success() || failure()
+      run: ./rubric.sh test.out
+
+  lint:
+    name: Lint
+    runs-on: ud-vdi-arc
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-go@v4
+        with:
+          go-version: stable
+          # cache: false
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v3
+        with:
+          version: latest
+
